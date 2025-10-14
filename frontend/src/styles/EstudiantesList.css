@@ -1,0 +1,14 @@
+.estudiantes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.estudiantes-count {
+  color: #aaa;
+}
+
+.estudiantes-table-wrapper p {
+  color: #fff;
+}

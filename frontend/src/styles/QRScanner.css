@@ -1,0 +1,9 @@
+#qr-reader {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto 2rem auto;
+}
+
+.scanner-actions {
+  margin-bottom: 2rem;
+}

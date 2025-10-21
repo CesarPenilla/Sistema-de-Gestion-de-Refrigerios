@@ -84,7 +84,16 @@ function QRGenerator() {
     try {
       setLoading(true);
       setError(null);
+      setSuccess(null);
       const response = await getCodigosPorEstudiante(selectedEstudiante);
+      
+      // Verificar si no hay códigos
+      if (!response.data || response.data.length === 0) {
+        setError('Este estudiante aún no tiene códigos QR generados. Por favor, genera los códigos primero usando el botón "Generar Códigos QR".');
+        setCodigos([]);
+        setLoading(false);
+        return;
+      }
       
       // Obtener las imágenes en base64 para cada código
       const codigosConImagenes = await Promise.all(
@@ -103,10 +112,11 @@ function QRGenerator() {
       );
       
       setCodigos(codigosConImagenes);
-      setSuccess(null);
+      setSuccess(`Se encontraron ${codigosConImagenes.length} códigos QR para este estudiante.`);
     } catch (err) {
-      setError('Error al cargar códigos QR');
-      console.error(err);
+      setError('Error al cargar códigos QR: ' + (err.response?.data?.error || err.message));
+      console.error('Error completo:', err);
+      setCodigos([]);
     } finally {
       setLoading(false);
     }
@@ -185,6 +195,20 @@ function QRGenerator() {
           Ver Códigos Existentes
         </button>
       </div>
+
+      {selectedEstudiante && codigos.length === 0 && !loading && !error && (
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '1rem', 
+          backgroundColor: '#2a2a2a', 
+          borderRadius: '4px',
+          border: '1px solid #444'
+        }}>
+          <p style={{ margin: 0, color: '#aaa' }}>
+            💡 <strong>Tip:</strong> Si este estudiante no tiene códigos QR aún, haz clic en "Generar Códigos QR" para crearlos.
+          </p>
+        </div>
+      )}
 
       {codigos.length > 0 && (
         <div className="qr-grid">

@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { validarCodigoQR } from '../services/api';
-import { useEffect } from 'react';
 import '../styles/QRScanner.css';
 
 function QRScanner() {
@@ -9,6 +8,26 @@ function QRScanner() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [scanner, setScanner] = useState(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-focus en el campo de entrada cuando se monta el componente
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Re-focus después de mostrar resultado o error
+    if (result || error) {
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [result, error]);
 
   useEffect(() => {
     return () => {
@@ -82,8 +101,12 @@ function QRScanner() {
 
   const handleManualInput = async (e) => {
     e.preventDefault();
-    const codigo = e.target.codigo.value;
+    const codigo = e.target.codigo.value.trim();
     
+    if (!codigo) {
+      return;
+    }
+
     try {
       const response = await validarCodigoQR(codigo);
       setResult({
@@ -94,11 +117,41 @@ function QRScanner() {
         fecha_uso: response.data.fecha_uso
       });
       setError(null);
+      
+      // Limpiar el campo inmediatamente
       e.target.reset();
+      
+      // Volver a hacer foco en el campo después de un breve delay
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+
+      // Auto-limpiar el mensaje de éxito después de 3 segundos
+      setTimeout(() => {
+        setResult(null);
+      }, 3000);
+
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Error al validar el código QR';
       setError(errorMsg);
       setResult(null);
+      
+      // Limpiar el campo también en caso de error
+      e.target.reset();
+      
+      // Volver a hacer foco
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+
+      // Auto-limpiar el mensaje de error después de 3 segundos
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
@@ -106,13 +159,40 @@ function QRScanner() {
     <div className="card">
       <h2>Escanear Código QR</h2>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <div className="alert alert-error" style={{ 
+          fontSize: '1.2rem', 
+          padding: '1.5rem',
+          animation: 'shake 0.5s'
+        }}>
+          ❌ <strong>{error}</strong>
+        </div>
+      )}
+      
       {result && (
-        <div className="alert alert-success">
-          <h3>✅ {result.mensaje}</h3>
-          <p><strong>Estudiante:</strong> {result.estudiante}</p>
-          <p><strong>Tipo de comida:</strong> {result.tipo_comida}</p>
-          <p><strong>Fecha de uso:</strong> {new Date(result.fecha_uso).toLocaleString()}</p>
+        <div className="alert alert-success" style={{ 
+          fontSize: '1.2rem', 
+          padding: '1.5rem',
+          animation: 'fadeIn 0.3s'
+        }}>
+          <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem' }}>
+            ✅ {result.mensaje}
+          </h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr', 
+            gap: '1rem',
+            fontSize: '1rem'
+          }}>
+            <div>
+              <strong>👤 Estudiante:</strong><br/>
+              {result.estudiante}
+            </div>
+            <div>
+              <strong>🍽️ Comida:</strong><br/>
+              {result.tipo_comida}
+            </div>
+          </div>
         </div>
       )}
 
@@ -131,22 +211,44 @@ function QRScanner() {
       <div id="qr-reader" style={{ marginBottom: '2rem' }}></div>
 
       <div className="card" style={{ marginTop: '2rem' }}>
-        <h3>O ingresar código manualmente</h3>
+        <h3>📝 Escaneo Rápido Manual</h3>
+        <p style={{ color: '#aaa', marginBottom: '1rem' }}>
+          Escanea el código QR con el lector y presiona Enter. El campo se limpiará automáticamente.
+        </p>
         <form onSubmit={handleManualInput}>
           <div className="form-group">
-            <label htmlFor="codigo">Código UUID</label>
+            <label htmlFor="codigo">Código QR</label>
             <input
+              ref={inputRef}
               type="text"
               id="codigo"
               name="codigo"
-              placeholder="Ej: 550e8400-e29b-41d4-a716-446655440000"
-              required
+              placeholder="Escanea o pega el código aquí..."
+              autoFocus
+              autoComplete="off"
+              style={{
+                fontSize: '1.1rem',
+                padding: '0.8rem',
+                textAlign: 'center',
+                fontFamily: 'monospace'
+              }}
             />
           </div>
-          <button type="submit" className="btn btn-success">
-            Validar Código
+          <button type="submit" className="btn btn-success" style={{ width: '100%' }}>
+            ✅ Validar Código (o presiona Enter)
           </button>
         </form>
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '0.8rem', 
+          backgroundColor: '#1a1a1a', 
+          borderRadius: '4px',
+          fontSize: '0.9rem',
+          color: '#888'
+        }}>
+          💡 <strong>Tip:</strong> Mantén el cursor en el campo de entrada. Después de cada escaneo, 
+          el campo se limpiará automáticamente y estará listo para el siguiente código.
+        </div>
       </div>
     </div>
   );

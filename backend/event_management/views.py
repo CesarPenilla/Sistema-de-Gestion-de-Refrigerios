@@ -63,7 +63,11 @@ class EstudianteViewSet(viewsets.ModelViewSet):
         for tipo in tipos_comida:
             codigo_qr = CodigoQR.objects.create(
                 estudiante=estudiante,
-                tipo_comida=tipo
+                tipo_comida=tipo,
+                visitante_id=estudiante.identificacion,
+                visitante_nombre=estudiante.nombre,
+                visitante_identificacion=estudiante.identificacion,
+                visitante_email=estudiante.email
             )
             codigos_creados.append(codigo_qr)
         
@@ -118,7 +122,11 @@ class EstudianteViewSet(viewsets.ModelViewSet):
                 for tipo in tipos_comida:
                     codigo = CodigoQR.objects.create(
                         estudiante=estudiante,
-                        tipo_comida=tipo
+                        tipo_comida=tipo,
+                        visitante_id=estudiante.identificacion,
+                        visitante_nombre=estudiante.nombre,
+                        visitante_identificacion=estudiante.identificacion,
+                        visitante_email=estudiante.email
                     )
                     codigos_creados.append(codigo)
                     total_codigos += 1
@@ -180,10 +188,13 @@ class CodigoQRViewSet(viewsets.ModelViewSet):
             # Marcar como usado
             codigo_qr.marcar_como_usado()
             
+            # Usar visitante_nombre si existe, sino estudiante
+            nombre = codigo_qr.visitante_nombre if codigo_qr.visitante_nombre else (codigo_qr.estudiante.nombre if codigo_qr.estudiante else 'Desconocido')
+            
             return Response(
                 {
                     'mensaje': 'Código QR validado exitosamente.',
-                    'estudiante': codigo_qr.estudiante.nombre,
+                    'estudiante': nombre,
                     'tipo_comida': codigo_qr.tipo_comida,
                     'fecha_uso': codigo_qr.fecha_uso
                 },
@@ -247,16 +258,18 @@ class CodigoQRViewSet(viewsets.ModelViewSet):
         # Convertir a base64
         img_base64 = base64.b64encode(buffer.getvalue()).decode()
         
+        nombre = codigo_qr_obj.visitante_nombre if codigo_qr_obj.visitante_nombre else (codigo_qr_obj.estudiante.nombre if codigo_qr_obj.estudiante else 'Desconocido')
+        
         return Response({
             'codigo': str(codigo_qr_obj.codigo),
             'tipo_comida': codigo_qr_obj.tipo_comida,
-            'estudiante': codigo_qr_obj.estudiante.nombre,
+            'estudiante': nombre,
             'imagen_base64': f'data:image/png;base64,{img_base64}'
         })
 
     @action(detail=False, methods=['get'])
     def por_estudiante(self, request):
-        """Obtiene los códigos QR de un estudiante específico"""
+        """Obtiene los códigos QR de un estudiante/visitante específico"""
         estudiante_id = request.query_params.get('estudiante_id')
         
         if not estudiante_id:
@@ -265,6 +278,9 @@ class CodigoQRViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        codigos = CodigoQR.objects.filter(estudiante_id=estudiante_id)
+        # Buscar por visitante_id primero, sino por estudiante_id
+        codigos = CodigoQR.objects.filter(visitante_id=estudiante_id)
+        if not codigos.exists():
+            codigos = CodigoQR.objects.filter(estudiante_id=estudiante_id)
         serializer = self.get_serializer(codigos, many=True)
         return Response(serializer.data)

@@ -40,13 +40,25 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-#### Paso 3: Configurar MySQL
-Crea la base de datos en MySQL:
-```sql
-CREATE DATABASE refrigerios_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+#### Paso 3: Configurar Variables de Entorno
+Copia el archivo de ejemplo y configura tus credenciales:
+```powershell
+cp .env.example .env
 ```
 
-Actualiza las credenciales en `backend/config/settings.py` si es necesario.
+Edita `.env` con tus credenciales:
+- Contraseñas de MySQL
+- Email y contraseña de aplicación de Gmail
+- Secret key de Django
+
+**Ver guía completa**: [CONFIGURACION_VARIABLES_ENTORNO.md](CONFIGURACION_VARIABLES_ENTORNO.md)
+
+#### Paso 4: Configurar MySQL
+Crea las bases de datos en MySQL:
+```sql
+CREATE DATABASE refrigerio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE rica_univalle CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
 #### Paso 4: Aplicar migraciones
 ```powershell

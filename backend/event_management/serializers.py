@@ -1,7 +1,31 @@
 from rest_framework import serializers
-from .models import Estudiante, CodigoQR
+from .models import Estudiante, CodigoQR, Visitante
 import uuid
 import re
+
+
+class VisitanteSerializer(serializers.ModelSerializer):
+    """Serializador para el modelo Visitante (tabla externa)"""
+    id = serializers.CharField(source='documento', read_only=True)
+    nombre = serializers.SerializerMethodField()
+    identificacion = serializers.CharField(source='documento', read_only=True)
+    activo = serializers.SerializerMethodField()
+    fecha_registro = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Visitante
+        fields = ['id', 'nombre', 'identificacion', 'email', 'activo', 'fecha_registro']
+        read_only_fields = ['id', 'nombre', 'identificacion', 'email']
+    
+    def get_nombre(self, obj):
+        """Retorna nombre completo combinando nombre y apellido"""
+        return obj.nombre_completo
+    
+    def get_activo(self, obj):
+        return obj.activo
+    
+    def get_fecha_registro(self, obj):
+        return obj.fecha_registro
 
 
 class EstudianteSerializer(serializers.ModelSerializer):
@@ -15,7 +39,7 @@ class EstudianteSerializer(serializers.ModelSerializer):
 
 class CodigoQRSerializer(serializers.ModelSerializer):
     """Serializador para el modelo CodigoQR"""
-    estudiante_nombre = serializers.CharField(source='estudiante.nombre', read_only=True)
+    estudiante_nombre = serializers.CharField(source='visitante_nombre', read_only=True)
     codigo_str = serializers.CharField(source='codigo', read_only=True)
     
     class Meta:
@@ -24,6 +48,10 @@ class CodigoQRSerializer(serializers.ModelSerializer):
             'id', 
             'estudiante', 
             'estudiante_nombre',
+            'visitante_id',
+            'visitante_nombre',
+            'visitante_identificacion',
+            'visitante_email',
             'tipo_comida', 
             'codigo',
             'codigo_str',
